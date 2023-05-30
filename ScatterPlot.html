@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="utf-8">
+<html>
+
+<head>
+    <title>ScatterPlot</title>
+
+    
+    <!-- Retrieve the D3js library -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+   <!-- <meta name="viewport" content="width=device-width, initial-scale=1"> -->
+</head>
+
+<!-- Credit: https://bl.ocks.org/d3noob/97e51c5be17291f79a27705cef827da2
+https://d3-graph-gallery.com/graph/scatter_basic.html -->
+
+<!-- Define style for my tooltip  -->
+<style> 
+
+    
+    div.mytip {
+      position: absolute;
+      text-align: center;
+      width: 90px;
+      height: 35px;
+      padding: 2px;
+      font: 12px sans-serif;
+      background: rgb(195, 132, 231);
+      border: 0px;
+      border-radius: 8px;
+      pointer-events: none;
+    }
+    
+    </style>
+
+<body>
+    
+    
+    <script>
+         /* JavaScript and d3 in here */
+       
+// This block defines margin to produce a clear and more centred chart
+        const margin = {top: 40, right: 70, bottom: 60, left: 85},
+    width = 900 - margin.left - margin.right,
+    height = 700 - margin.top - margin.bottom, spacing = 4;
+
+
+     //Define the div 
+      const div = d3.select("body").append("div")
+    .attr("class", "mytip")
+    .style("opacity", 0);
+
+
+ //Access the data 
+
+            d3.json("https://raw.githubusercontent.com/tunji01/TeessideProjects/main/scatterPlot.json").then(buildChart);
+            //d3.json("scatterPlot.json").then(buildChart);
+
+            function buildChart(data) {
+
+       // Appending svg object to the body of the page 
+        const svg = d3.select("body").append("svg")
+                    .attr("width", width + margin.left + margin.right) 
+                    .attr("height",height + margin.top + margin.bottom)
+                    .append("g")
+                    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+                    
+
+        // Create xScale and yScale using ScaleLinear
+        const xScale = d3.scaleLinear()
+                        .domain([d3.min(data, function(d){return d.Income;})  , d3.max(data, function(d){return d.Income; })])
+                        .range([0, width])
+                        .nice();
+                        
+        const yScale = d3.scaleLinear()
+                        .domain([0, d3.max(data, function(d){return d.Loan_amount; }) ]) 
+                        .range([height-spacing, 0])
+                        .nice();
+
+
+        // Adding title to the chart, setting the style, position and attributes of the title
+        svg.append('text')
+        .attr('x', width/2 + 70)
+        .attr('y', 2)
+        .attr('text-anchor', 'middle')
+        .style('font-family', 'Lucida Console')
+        .style('font-size', 20)
+        .text('Relationship between Income and Loan Amount');
+
+        // Adding label to the X-axis
+        svg.append('text')
+        .attr("x", width/2)
+        .attr("y", height + margin.top + 10)
+        .attr('text-anchor', 'middle')
+        .style('font-family', 'Helvetica')
+        .style('font-size', 14)
+        .text('Income');
+        
+        // Adding label to the Y-axis
+        svg.append('text')
+        .attr('text-anchor', 'left')
+        .attr("transform", "rotate(-90)")
+        .attr("y", -margin.left + 20)
+        .attr("x", -margin.top - 250)
+        .style('font-family', 'Helvetica')
+        .style('font-size', 14)
+        .text('Loan Amount');
+        
+
+        // Adding  both xAxis and yAxis to the chart
+        const xAxis = d3.axisBottom(xScale);
+        const yAxis = d3.axisLeft(yScale);
+
+        svg.append("g").attr("transform", "translate(0," + (height-spacing)+ ")").call(xAxis);
+        svg.append("g") .call(yAxis);
+
+
+        
+        //Creating a colour scale for grouping by Status 
+        const color = d3.scaleOrdinal()
+            .domain(["Yes", "No" ])
+            .range([ "#0000ff", "#ff0000"])
+
+
+/* //Passing Data into the chart
+              The moveover and mouseout functions have also been defined in this block
+              
+               */
+         const dots = svg.append("g")
+                    .selectAll("dot")
+                    .data(data);
+                    dots.enter().append("circle") 
+                    .attr("cx", function (d) { return xScale(d.Income); } )
+                    .attr("cy", function (d) { return yScale(d.Loan_amount); } )
+                    .attr("r", 3)
+                    .style("fill", function (d) { return color(d.Status) } )
+            .on("mouseover", function(event,d) {
+                div.transition()
+                .ease(d3.easeBounceOut)
+                .delay(function(d,i){return(i*1)})
+                .duration(40)
+                .style("opacity", .8);
+                div.html("Loan:"  + (d.Loan_amount) + "<br/>" + "Income:" + d.Income)
+                .style("left", (event.pageX) + "px")
+                .style("top", (event.pageY - 28) + "px");
+                })
+
+            .on("mouseout", function(d) {
+                div.transition()
+                .duration(500)
+                .style("opacity", 0);
+       
+       });
+                 
+                   
+  // Creating Chart Legend with 
+                    svg.append("circle").attr("cx",690).attr("cy",110).attr("r", 6).style("fill", "#0000ff")
+                    svg.append("circle").attr("cx",690).attr("cy",130).attr("r", 6).style("fill", "#ff0000")
+                  
+                    svg.append("text")
+                    .attr("x", 690)
+                    .attr("y", 90)
+                    .text("Loan Status")
+                    .style("font-size", "25px")
+                    .attr("alignment-baseline","middle")
+
+
+                    svg.append("text")
+                    .attr("x", 700)
+                    .attr("y", 110)
+                    .text("Yes")
+                    .style("font-size", "15px")
+                    .attr("alignment-baseline","middle")
+
+                    svg.append("text")
+                    .attr("x", 700)
+                    .attr("y", 130)
+                    .text("No")
+                    .style("font-size", "15px")
+                    .attr("alignment-baseline","middle") 
+
+
+        
+          }
+        
+   
+    </script>
+
+    
+</body>
+
+</html>
